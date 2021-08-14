@@ -1,3 +1,5 @@
+import time
+
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.common.by import By
@@ -7,6 +9,8 @@ from selenium.webdriver.support import expected_conditions
 import sys
 import pandas as pd
 
+import tkinter as tk
+from tkinter import messagebox
 
 url = sys.argv[1]
 
@@ -21,6 +25,14 @@ caps["pageLoadStrategy"] = "eager"
 driver = webdriver.Chrome('./drivers/mac/chromedriver', options=options, desired_capabilities=caps)
 page = driver.get(url=url)
 
+root = tk.Tk()
+
+MsgBox = tk.messagebox.askquestion('Waiting...', icon='warning')
+if MsgBox == 'yes' or 'no':
+    root.destroy()
+
+root.mainloop()
+
 WebDriverWait(driver, 5).until(expected_conditions.element_to_be_clickable((
     By.CLASS_NAME, 'i-result-item')))
 
@@ -32,19 +44,17 @@ df = pd.DataFrame(columns=['name', 'homepage', 'phone', 'info', 'contact_person'
 
 for result in results:
 
-    driver.implicitly_wait(1)
+    driver.execute_script('window.scrollTo(0,200)')
 
     WebDriverWait(driver, 5).until(expected_conditions.element_to_be_clickable((
         By.CLASS_NAME, 'i-result-item')))
 
     result.click()
     WebDriverWait(driver, 5).until(expected_conditions.element_to_be_clickable((
-        By.CLASS_NAME, 'ui-button-text')))
-    result.find_element_by_class_name('ui-button-text').click()
+        By.XPATH, f"//*[@id='{result.get_attribute('id')}']/div[2]/div[2]/div[2]/a/button")))
+    driver.find_element_by_xpath(f"//*[@id='{result.get_attribute('id')}']/div[2]/div[2]/div[2]/a/button").click()
 
-    driver.implicitly_wait(0.5)
-
-    WebDriverWait(driver, 10).until(expected_conditions.element_to_be_clickable((
+    WebDriverWait(driver, 5).until(expected_conditions.element_to_be_clickable((
         By.CLASS_NAME, 'i-pagetitle')))
 
     # get all elements from company
@@ -58,9 +68,7 @@ for result in results:
         By.CLASS_NAME, 'i-ansprechpartner')))
     contact_person = driver.find_element_by_class_name('i-ansprechpartner').text
 
-
-
-    # Create a Pandas dataframe from some data.
+    # append data
     df = df.append({
         'name': name[4:],
         'homepage': homepage,
