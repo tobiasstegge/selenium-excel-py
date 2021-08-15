@@ -2,3 +2,4 @@ drivers
 screenshots
 .idea
 venv
+*.xlsx
