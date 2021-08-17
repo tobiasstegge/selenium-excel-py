@@ -7,28 +7,45 @@ id_list = r.json()['id-list']['id']
 
 df = pd.DataFrame(columns=['Unternehmen', 'Mitarbeiter', 'Homepage', 'Info', 'Kontaktperson'])
 
-for unt in id_list[30:50]:
+print(str(len(id_list)) + " Companies found")
+
+for unt in id_list:
     company = get(f'https://regisonline.de/r3/rest/regis/{unt}?level=3').json()['unternehmen']
 
-    if type(company['name']['value']) == list:
-        unternehmen = company['name']['value'][0]['$']
-    else:
-        unternehmen = company['name']['value']['$']
-
-    if type(company['link-list']['link']) == list:
-        homepage = company['link-list']['link'][0]['url']['value']['$']
-    else:
-        if type(company['link-list']['link']['url']['value']) == list:
-            homepage = company['link-list']['link']['url']['value'][0]['$']
+    try:
+        if type(company['name']['value']) == list:
+            unternehmen = company['name']['value'][0]['$']
         else:
-            homepage = company['link-list']['link']['url']['value']['$']
-        if type(company['link-list']['link']) == list:
-            homepage = company['link-list']['link'][0]['url']['value'][0]['$']
+            unternehmen = company['name']['value']['$']
+    except(Exception):
+        print('NAME FAILED')
+        name = ''
 
-    if type(company['infoFertigungDienstleistung']['value']) == list:
-        info = company['infoFertigungDienstleistung']['value'][0]['$']
-    else:
-        info = company['infoFertigungDienstleistung']['value']['$']
+    try:
+        if type(company['link-list']['link']) == list:
+            if type(company['link-list']['link'][0]['url']['value']) == list:
+                homepage = company['link-list']['link'][0]['url']['value'][0]['$']
+            else:
+                homepage = company['link-list']['link'][0]['url']['value']['$']
+        else:
+            if type(company['link-list']['link']['url']['value']) == list:
+                homepage = company['link-list']['link']['url']['value'][0]['$']
+            else:
+                homepage = company['link-list']['link']['url']['value']['$']
+            if type(company['link-list']['link']) == list:
+                homepage = company['link-list']['link'][0]['url']['value'][0]['$']
+    except(Exception):
+        print('HOMEPAGE FAILED')
+        homepage = ''
+
+    try:
+        if type(company['infoFertigungDienstleistung']['value']) == list:
+            info = company['infoFertigungDienstleistung']['value'][0]['$']
+        else:
+            info = company['infoFertigungDienstleistung']['value']['$']
+    except(Exception):
+        print('INFO FAILED')
+        info = ''
 
     telefon = ''
     kontaktpersonen = ''
@@ -37,25 +54,29 @@ for unt in id_list[30:50]:
     vorname = ''
     funktion = ''
 
-    if type(company['kontaktperson-mit-kategorie-list']['kontaktperson-mit-kategorie']) == list:
-        for kontaktperson in company['kontaktperson-mit-kategorie-list']['kontaktperson-mit-kategorie']:
-            if kontaktperson['kontaktperson'].get('telefon') is not None:
-                telefon = kontaktperson['kontaktperson'].get('telefon').get('@converted')
+    try:
+        if type(company['kontaktperson-mit-kategorie-list']['kontaktperson-mit-kategorie']) == list:
+            for kontaktperson in company['kontaktperson-mit-kategorie-list']['kontaktperson-mit-kategorie']:
+                if kontaktperson['kontaktperson'].get('telefon') is not None:
+                    telefon = kontaktperson['kontaktperson'].get('telefon').get('@converted')
 
-            if kontaktperson['kontaktperson'].get('funktion'):
-                if type(kontaktperson['kontaktperson'].get('funktion').get('value')) == list:
-                    funktion = kontaktperson['kontaktperson'].get('funktion').get('value')[0].get('$')
-                else:
-                    funktion = kontaktperson['kontaktperson'].get('funktion').get('value').get('$')
+                if kontaktperson['kontaktperson'].get('funktion'):
+                    if type(kontaktperson['kontaktperson'].get('funktion').get('value')) == list:
+                        funktion = kontaktperson['kontaktperson'].get('funktion').get('value')[0].get('$')
+                    else:
+                        funktion = kontaktperson['kontaktperson'].get('funktion').get('value').get('$')
 
-            text = f"{kontaktperson['kontaktperson'].get('anrede')} " \
-                   f"{kontaktperson['kontaktperson'].get('titel')} " \
-                   f"{kontaktperson['kontaktperson'].get('vorname')} " \
-                   f"{kontaktperson['kontaktperson'].get('nachname')}, " \
-                   f"{funktion}, " \
-                   f"Tel: {telefon}"
+                text = f"{kontaktperson['kontaktperson'].get('anrede')} " \
+                       f"{kontaktperson['kontaktperson'].get('titel')} " \
+                       f"{kontaktperson['kontaktperson'].get('vorname')} " \
+                       f"{kontaktperson['kontaktperson'].get('nachname')}, " \
+                       f"{funktion}, " \
+                       f"Tel: {telefon}"
 
-            kontaktpersonen += text + "\n"
+                kontaktpersonen += text + "\n"
+    except(Exception):
+        print('CONTACT FAILED')
+        kontaktpersonen = ''
 
     df = df.append({
          'Unternehmen': unternehmen,
@@ -65,7 +86,7 @@ for unt in id_list[30:50]:
          'Kontaktperson': kontaktpersonen
     }, ignore_index=True)
 
-    print(df)
+    print(unternehmen)
 
 # Create a Pandas Excel writer using XlsxWriter as the engine.
 writer = pd.ExcelWriter('data_fetch.xlsx', engine='xlsxwriter')
